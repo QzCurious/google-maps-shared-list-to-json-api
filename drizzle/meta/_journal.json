@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1782445276623,
+      "tag": "0000_past_cable",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782454577968,
+      "tag": "0001_dapper_phantom_reporter",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782454577969,
+      "tag": "0002_google_maps_fetch_failure_cooldowns",
+      "breakpoints": true
+    }
+  ]
+}
