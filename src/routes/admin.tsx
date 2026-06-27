@@ -15,6 +15,8 @@ type AdminRouteDependencies = {
   readonly googleMapsListAcquisition: GoogleMapsListAcquisition;
 };
 
+const ADMIN_COOKIE_NAME = "admin_session";
+
 function AdminDocument({ title, children }: { readonly title: string; readonly children: Child }) {
   return (
     <html lang="en">
@@ -130,7 +132,7 @@ export function createAdminRoutes({ config, googleMapsListAcquisition }: AdminRo
   }
 
   const requireAdminCookie: MiddlewareHandler = async (c, next) => {
-    if (!isLoggedIn(getCookie(c, config.adminCookieName))) {
+    if (!isLoggedIn(getCookie(c, ADMIN_COOKIE_NAME))) {
       return c.redirect("/admin/login");
     }
 
@@ -140,12 +142,12 @@ export function createAdminRoutes({ config, googleMapsListAcquisition }: AdminRo
   return new Hono()
     .use(jsxRenderer())
     .get("/admin", (c) =>
-      isLoggedIn(getCookie(c, config.adminCookieName))
+      isLoggedIn(getCookie(c, ADMIN_COOKIE_NAME))
         ? c.redirect("/admin/cache")
         : c.redirect("/admin/login"),
     )
     .get("/admin/login", (c) =>
-      isLoggedIn(getCookie(c, config.adminCookieName))
+      isLoggedIn(getCookie(c, ADMIN_COOKIE_NAME))
         ? c.redirect("/admin/cache")
         : c.render(<LoginPage />),
     )
@@ -158,7 +160,7 @@ export function createAdminRoutes({ config, googleMapsListAcquisition }: AdminRo
         return c.render(<LoginPage message="Invalid admin token" />);
       }
 
-      setCookie(c, config.adminCookieName, createAdminCookieValue(config), {
+      setCookie(c, ADMIN_COOKIE_NAME, createAdminCookieValue(config), {
         httpOnly: true,
         sameSite: "Lax",
         secure: config.nodeEnv === "production",
@@ -168,7 +170,7 @@ export function createAdminRoutes({ config, googleMapsListAcquisition }: AdminRo
       return c.redirect("/admin/cache");
     })
     .post("/admin/logout", (c) => {
-      deleteCookie(c, config.adminCookieName, {
+      deleteCookie(c, ADMIN_COOKIE_NAME, {
         path: "/admin",
       });
       return c.redirect("/admin/login");

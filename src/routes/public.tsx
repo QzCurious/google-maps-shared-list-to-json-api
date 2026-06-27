@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { raw } from "hono/html";
 import type { Child } from "hono/jsx";
 import { jsxRenderer } from "hono/jsx-renderer";
+import { listSnapshotSchedulePromptTemplate, sharedListLinkPlaceholder } from "../schedulePrompt.js";
 
 function PublicDocument({ title, children }: { readonly title: string; readonly children: Child }) {
   return (
@@ -15,7 +17,8 @@ function PublicDocument({ title, children }: { readonly title: string; readonly 
             main { display: grid; gap: 1.25rem; }
             nav ul { display: grid; gap: 0.6rem; padding-left: 1.2rem; }
             label { display: grid; gap: 0.4rem; }
-            input { font: inherit; padding: 0.5rem; width: min(100%, 42rem); }
+            input, textarea { box-sizing: border-box; font: inherit; padding: 0.5rem; width: min(100%, 42rem); }
+            textarea { min-height: 24rem; }
             button { font: inherit; padding: 0.45rem 0.7rem; }
             .actions { display: flex; gap: 0.5rem; align-items: center; }
             code { overflow-wrap: anywhere; }
@@ -37,7 +40,7 @@ function HomePage() {
         <nav aria-label="Pages">
           <ul>
             <li>
-              <a href="/list-snapshots">List Snapshot form</a>
+              <a href="/list-snapshots">Get JSON</a>
             </li>
             <li>
               <a href="/docs">API docs</a>
@@ -59,11 +62,40 @@ function HomePage() {
 }
 
 function ListSnapshotsPage() {
+  const promptScript = `
+    const form = document.querySelector('[data-list-snapshot-form]');
+    const input = document.querySelector('[data-shared-list-link]');
+    const output = document.querySelector('[data-schedule-prompt]');
+    const promptTemplate = ${JSON.stringify(listSnapshotSchedulePromptTemplate)};
+    const placeholder = ${JSON.stringify(sharedListLinkPlaceholder)};
+
+    form?.addEventListener('click', (event) => {
+      if (!(event.target instanceof HTMLButtonElement) || event.target.dataset.action !== 'render-schedule-prompt') {
+        return;
+      }
+
+      if (!(input instanceof HTMLInputElement) || !(output instanceof HTMLTextAreaElement)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (!input.reportValidity()) {
+        return;
+      }
+
+      output.value = promptTemplate.replaceAll(placeholder, encodeURIComponent(input.value.trim()));
+      output.hidden = false;
+      output.focus();
+      output.select();
+    });
+  `;
+
   return (
-    <PublicDocument title="List Snapshot">
+    <PublicDocument title="Get JSON">
       <>
-        <h1>List Snapshot</h1>
-        <form method="get" action="/v1/list-snapshots">
+        <h1>Get JSON</h1>
+        <form method="get" action="/v1/list-snapshots" data-list-snapshot-form>
           <label>
             Google Maps Shared List Link
             <input
@@ -71,14 +103,20 @@ function ListSnapshotsPage() {
               type="url"
               required
               autofocus
-              placeholder="https://maps.app.goo.gl/GBM3X5jfHHnoUyK38"
+              data-shared-list-link
             />
           </label>
           <div class="actions">
             <button type="submit">Get JSON</button>
+            <button type="button" data-action="render-schedule-prompt">Render Schedule Prompt</button>
             <a href="/">Home</a>
           </div>
         </form>
+        <label>
+          Schedule Prompt
+          <textarea readonly hidden data-schedule-prompt />
+        </label>
+        <script>{raw(promptScript)}</script>
       </>
     </PublicDocument>
   );
